@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Camera & DVR Player</title>
+
+    <!-- Video.js and high-quality fonts -->
+    <link href="https://vjs.zencdn.net/8.6.1/video-js.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-weight: 600;
+            font-size: 2.5rem;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(135deg, #eff6ff 0%, #93c5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .player-container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.6s ease-out both;
+            animation-delay: 0.2s;
+        }
+
+        /* Customizing Video.js to look premium */
+        .video-js {
+            width: 100%;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background-color: #000;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .vjs-theme-custom .vjs-control-bar {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+        }
+
+        .vjs-theme-custom .vjs-play-progress {
+            background: var(--primary);
+        }
+
+        .vjs-theme-custom .vjs-progress-control {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        .vjs-theme-custom .vjs-slider {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .vjs-theme-custom .vjs-load-progress div {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .controls-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ef4444;
+            animation: pulse 2s infinite;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: transparent;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>Camera Stream & DVR</h1>
+        <p>Seamlessly switch between live view and recorded history</p>
+    </div>
+
+    <div class="player-container">
+        <!-- Video.js container -->
+        <video-js id="my-video" class="video-js vjs-theme-custom vjs-big-play-centered" controls preload="auto"
+            width="960" height="540">
+            <!-- HLS source. This will be generated by our mock ffmpeg backend -->
+            <source src="/hls/stream.m3u8" type="application/x-mpegURL">
+            <p class="vjs-no-js">
+                To view this video please enable JavaScript, and consider upgrading to a
+                web browser that supports HTML5 video
+            </p>
+        </video-js>
+
+        <div class="controls-panel">
+            <div class="live-indicator" id="liveStatus">
+                <div class="live-dot" id="liveDot"></div>
+                <span id="liveText">LIVE</span>
+            </div>
+
+            <div class="quick-actions">
+                <button class="btn" onclick="seekRelative(-60)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />
+                    </svg>
+                    -60s
+                </button>
+                <button class="btn" onclick="seekRelative(-10)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                    -10s
+                </button>
+                <button class="btn btn-primary" onclick="goToLive()">
+                    Jump to Live
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="status-text" id="statusMessage">Connecting to stream...</div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://vjs.zencdn.net/8.6.1/video.min.js"></script>
+    <script>
+        // Initialize video.js with options optimized for live streams
+        const player = videojs('my-video', {
+            liveui: true,
+            fluid: true,
+            playbackRates: [0.5, 1, 1.5, 2]
+        });
+
+        const statusMsg = document.getElementById('statusMessage');
+        const liveDot = document.getElementById('liveDot');
+        const liveText = document.getElementById('liveText');
+        const indicator = document.getElementById('liveStatus');
+
+        player.on('ready', () => {
+            statusMsg.innerText = 'Player ready. Using HLS DVR stream.';
+        });
+
+        player.on('playing', () => {
+            statusMsg.innerText = 'Playing stream...';
+            updateLiveStatus();
+        });
+
+        player.on('waiting', () => {
+            statusMsg.innerText = 'Buffering... If this persists, the stream might be generating.';
+        });
+
+        player.on('error', () => {
+            statusMsg.innerText = 'Error loading stream. The backend ffmpeg might take 5-10 seconds to generate the first segments.';
+            // Retry logic
+            setTimeout(() => {
+                player.src({ type: 'application/x-mpegURL', src: '/hls/stream.m3u8' });
+                player.play();
+            }, 3000);
+        });
+
+        // Time updates to check if we are behind live edge
+        player.on('timeupdate', () => {
+            updateLiveStatus();
+        });
+
+        function updateLiveStatus() {
+            // Check if player is near live edge
+            // In video.js, liveTracker provides this info
+            if (player.liveTracker && player.liveTracker.isLive()) {
+                const atLiveEdge = player.liveTracker.atLiveEdge();
+                if (atLiveEdge) {
+                    liveDot.style.backgroundColor = '#ef4444'; // Red
+                    liveDot.style.boxShadow = '0 0 8px #ef4444';
+                    liveText.innerText = 'LIVE';
+                    indicator.style.color = '#ef4444';
+                    indicator.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                    indicator.style.background = 'rgba(239, 68, 68, 0.1)';
+                    statusMsg.innerText = 'Viewing live stream';
+                } else {
+                    liveDot.style.backgroundColor = '#f59e0b'; // Amber for DVR reading
+                    liveDot.style.boxShadow = 'none';
+                    liveText.innerText = 'DVR / DELAYED';
+                    indicator.style.color = '#f59e0b';
+                    indicator.style.borderColor = 'rgba(245, 158, 11, 0.2)';
+                    indicator.style.background = 'rgba(245, 158, 11, 0.1)';
+                    const behind = Math.round(player.liveTracker.liveWindow() - player.currentTime());
+                    statusMsg.innerText = `Viewing history (${behind}s behind live)`;
+                }
+            }
+        }
+
+        function seekRelative(seconds) {
+            let newTime = player.currentTime() + seconds;
+            // Prevent seeking before 0
+            if (newTime < 0) newTime = 0;
+            player.currentTime(newTime);
+        }
+
+        function goToLive() {
+            if (player.liveTracker) {
+                player.liveTracker.seekToLiveEdge();
+            } else {
+                // Fallback for non-live configurations
+                player.currentTime(player.duration());
+            }
+        }
+    </script>
+</body>
+
+</html>

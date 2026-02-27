@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # NGINX to serve the web interface and the HLS segments
+  web:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./html:/usr/share/nginx/html
+    depends_on:
+      - camera-mock
+
+  # FFmpeg to simulate a live camera feeding into a rolling DVR window buffer
+  camera-mock:
+    image: jrottenberg/ffmpeg:4.4-alpine
+    restart: unless-stopped
+    command: >
+      -rtsp_transport tcp -i "rtsp://admin:password@192.168.2.30"
+      -c:v libx264 -preset veryfast -g 60 -sc_threshold 0 -b:v 1500k
+      -f hls 
+      -hls_time 2 
+      -hls_list_size 0
+      -hls_playlist_type event 
+      /output/stream.m3u8
+    volumes:
+      - ./html/hls:/output
